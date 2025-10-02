@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pilih Pemeriksaan Lab - RS Imanuel</title>
+  <link rel="stylesheet" href="periksa.css">
+</head>
+<body>
+
+  <div class="header">
+    <h1>Selamat Datang di Rumah Sakit Imanuel</h1>
+  </div>
+
+  <div class="navigation-bar">
+    <a href="index.html" class="navbar-logo">RS Imanuel</a>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="data_pasien.html">Data Pasien</a></li>
+      <li><a href="periksa.html">Jenis Pemeriksaan</a></li>
+      <li><a href="data_hasil_lab.html">Data Hasil Lab</a></li>
+    </ul>
+  </div>
+
+  <div class="navbar-placeholder"></div>
+
+  <div class="container">
+    <h1 class="page-title">Pilih Pemeriksaan Lab</h1>
+    
+    <div class="main-controls">
+      <label for="pasienSelect">Langkah 1: Pilih Pasien</label>
+      
+      <div class="controls-wrapper">
+        <div class="search-container">
+          <input type="text" id="pasienSearch" placeholder="Cari nama pasien...">
+          <button id="pasienSearchButton">Cari</button>
+        </div>
+        <select id="pasienSelect" class="form-select-filter">
+          <option value="">-- Pilih dari daftar hasil --</option>
+        </select>
+      </div>
+    </div>
+
+    <h3>Langkah 2: Pilih Jenis Pemeriksaan</h3>
+    <div id="pemeriksaanChecklist">
+        <label><input type="checkbox" value="hemoglobin"> Hemoglobin</label>
+        <label><input type="checkbox" value="hematokrit"> Hematokrit</label>
+        <label><input type="checkbox" value="leukosit"> Leukosit</label>
+        <label><input type="checkbox" value="eritrosit"> Eritrosit</label>
+        <label><input type="checkbox" value="trombosit"> Trombosit</label>
+        <label><input type="checkbox" value="led"> LED</label>
+        <label><input type="checkbox" value="retikulosit"> Retikulosit</label>
+        <label><input type="checkbox" value="sgot"> SGOT (AST)</label>
+        <label><input type="checkbox" value="sgpt"> SGPT (ALT)</label>
+        <label><input type="checkbox" value="ureum"> Ureum</label>
+        <label><input type="checkbox" value="creatinine"> Creatinine</label>
+        <label><input type="checkbox" value="hbsag"> HbsAG</label>
+        <label><input type="checkbox" value="antiHcv"> Anti HCV</label>
+    </div>
+    <div class="button-group">
+      <button id="simpanBtn">💾 Simpan Pilihan</button>
+      <button id="lanjutkanBtn">➡️ Lanjutkan ke Input Hasil</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="table-header">
+      <h2>Status Pilihan Tes Pasien</h2>
+      <div class="search-container">
+        <input type="search" id="searchInput" placeholder="Cari berdasarkan nama pasien...">
+        <button id="searchButton">Cari</button>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table id="tabelPeriksa">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Umur</th>
+            <th>J. Kelamin</th>
+            <th>Tgl Periksa</th>
+            <th>Diagnosa</th>
+            <th>Dokter Pengirim</th>
+            <th>P. Jawab Lab</th>
+            <th>Pemeriksaan Dipilih</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tabelPeriksaBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let pasienListCache = [];
+
+    function loadPasienDropdown(filter=""){
+      const pasienList=JSON.parse(localStorage.getItem('pasienList'))||[];
+      pasienListCache = pasienList;
+      
+      const select=document.getElementById('pasienSelect');
+      const selectedValue = select.value;
+      select.innerHTML='<option value="">-- Pilih Pasien --</option>';
+      
+      pasienList
+        .filter(p => p.nama.toLowerCase().includes(filter.toLowerCase()))
+        .forEach(p=>{
+          const opt=document.createElement("option");
+          opt.value=p.id;
+          opt.textContent=`${p.nama} (ID: ${p.id})`;
+          select.appendChild(opt);
+      });
+      select.value = selectedValue;
+    }
+
+    function updateChecklistForPatient() {
+        const pasienId = document.getElementById('pasienSelect').value;
+        const allCheckboxes = document.querySelectorAll('#pemeriksaanChecklist input[type="checkbox"]');
+
+        if (!pasienId) {
+            allCheckboxes.forEach(checkbox => checkbox.checked = false);
+            return;
+        }
+
+        const pasien = pasienListCache.find(p => p.id == pasienId);
+        const tesDipilih = (pasien && pasien.tesDipilih) ? pasien.tesDipilih : [];
+
+        allCheckboxes.forEach(checkbox => {
+            checkbox.checked = tesDipilih.includes(checkbox.value);
+        });
+    }
+
+    function getSelectedTests(){
+      return Array.from(document.querySelectorAll('#pemeriksaanChecklist input:checked')).map(c=>c.value);
+    }
+
+    function simpanPilihan(){
+      const pasienId=document.getElementById('pasienSelect').value;
+      if(!pasienId)return alert("Pilih pasien dulu!");
+      
+      const tes=getSelectedTests();
+      
+      let pasienList=JSON.parse(localStorage.getItem('pasienList'))||[];
+      const idx=pasienList.findIndex(p=>p.id==pasienId);
+      if(idx!==-1){
+        pasienList[idx].tesDipilih=tes;
+        localStorage.setItem('pasienList',JSON.stringify(pasienList));
+        alert("Pilihan pemeriksaan berhasil disimpan!");
+        filterTableRiwayat();
+      }
+    }
+
+    function cetakForm(pasienId){
+      const pasien = (JSON.parse(localStorage.getItem('pasienList')) || []).find(p => p.id == pasienId);
+      if(!pasien||!pasien.tesDipilih||pasien.tesDipilih.length===0){
+        return alert("Pasien ini belum punya pemeriksaan yang disimpan untuk dicetak!");
+      }
+      localStorage.setItem('pemeriksaanUntukDiinput',JSON.stringify({pasienId: parseInt(pasienId), tests:pasien.tesDipilih}));
+      window.open("PeriksaPrint.html","_blank");
+    }
+
+    function lanjutkanInput(){
+      const pasienId=document.getElementById('pasienSelect').value;
+      if(!pasienId)return alert("Pilih pasien dulu!");
+      
+      const pasien= (JSON.parse(localStorage.getItem('pasienList')) || []).find(p => p.id == pasienId);
+      if(!pasien||!pasien.tesDipilih||pasien.tesDipilih.length===0){
+        return alert("Simpan dulu pilihan pemeriksaan sebelum lanjut!");
+      }
+      localStorage.setItem('pemeriksaanUntukDiinput',JSON.stringify({pasienId: parseInt(pasienId), tests:pasien.tesDipilih}));
+      window.location.href="data_hasil_lab.html";
+    }
+
+    function tampilkanRiwayat(dataToDisplay){
+      const tbody=document.getElementById("tabelPeriksaBody");
+      tbody.innerHTML="";
+
+      if(dataToDisplay.length===0){
+        tbody.innerHTML='<tr><td colspan="9" style="text-align:center;">Data pasien tidak ditemukan.</td></tr>';
+        return;
+      }
+
+      dataToDisplay.forEach(p=>{
+        const row=document.createElement("tr");
+        row.innerHTML=`
+          <td>${p.nama}</td>
+          <td>${p.umur || "-"}</td>
+          <td>${p.jekel === "L" ? "Laki-laki" : (p.jekel === "P" ? "Perempuan" : "-")}</td>
+          <td>${p.tanggal || "-"}</td>
+          <td>${p.diagnosa || "-"}</td>
+          <td>${p.dokter_pengirim || "-"}</td>
+          <td>${p.penanggung_jawab || "-"}</td>
+          <td>${p.tesDipilih && p.tesDipilih.length > 0 ? p.tesDipilih.join(", ") : "-"}</td>
+          <td><button onclick="cetakForm(${p.id})">🖨 Cetak</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function filterTableRiwayat(){
+      const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+      const pasienList = JSON.parse(localStorage.getItem('pasienList')) || [];
+      pasienListCache = pasienList;
+      
+      const filteredData = pasienList.filter(pasien => {
+          return pasien.nama.toLowerCase().includes(searchTerm);
+      });
+
+      tampilkanRiwayat(filteredData);
+    }
+
+    function handleNavbarScroll() {
+      const navbar = document.querySelector(".navigation-bar");
+      if (window.scrollY > 50) navbar.classList.add("scrolled");
+      else navbar.classList.remove("scrolled");
+    }
+    
+    document.addEventListener('DOMContentLoaded',()=>{
+      loadPasienDropdown();
+      filterTableRiwayat();
+
+      document.getElementById('pasienSelect').addEventListener('change', updateChecklistForPatient);
+      document.getElementById('simpanBtn').addEventListener('click',simpanPilihan);
+      document.getElementById('lanjutkanBtn').addEventListener('click',lanjutkanInput);
+      
+      document.getElementById("searchButton").addEventListener("click", filterTableRiwayat);
+      document.getElementById("searchInput").addEventListener("keyup", function(event) {
+          if (event.key === "Enter") filterTableRiwayat();
+      });
+
+      const pasienSearchInput = document.getElementById("pasienSearch");
+      const pasienSearchButton = document.getElementById("pasienSearchButton");
+
+      function filterPasienDropdown() {
+          loadPasienDropdown(pasienSearchInput.value);
+      }
+
+      pasienSearchButton.addEventListener("click", filterPasienDropdown);
+      pasienSearchInput.addEventListener("keyup", function(event) {
+        if (event.key === "Enter") {
+            filterPasienDropdown();
+        }
+      });
+
+      window.addEventListener("scroll", handleNavbarScroll);
+    });
+  </script>
+</body>
+</html>

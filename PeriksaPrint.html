@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Formulir Permintaan Pemeriksaan - RS Imanuel</title>
+  <link rel="stylesheet" href="printperiksa.css" />
+ 
+</head>
+<body>
+
+  <div class="page-container">
+    <div class="print-header">
+      <img src="logors.jpg" alt="Logo RS Imanuel" class="logo">
+      <div class="header-text">
+        <h1>RUMAH SAKIT IMANUEL</h1>
+        <p>Jl. Soekarno-Hatta, Bandar Lampung, Lampung</p>
+        <p>Telp: (0721) 123456 | Email: info@rsimanuel.co.id</p>
+      </div>
+      <img src="politek.jpg" alt="Logo Mitra" class="logo">
+    </div>
+
+    <h3 class="form-title">FORMULIR PERMINTAAN PEMERIKSAAN</h3>
+
+    <div>
+      <h4 class="section-title">Data Pasien</h4>
+      <table class="info-table">
+        <tr><td class="label">Nama Pasien</td><td class="colon">:</td><td id="namaPasien">-</td></tr>
+        <tr><td class="label">Umur</td><td class="colon">:</td><td id="umurPasien">-</td></tr>
+        <tr><td class="label">Jenis Kelamin</td><td class="colon">:</td><td id="jkPasien">-</td></tr>
+        <tr><td class="label">Tanggal Permintaan</td><td class="colon">:</td><td id="tanggalPeriksa">-</td></tr>
+        <tr><td class="label">Diagnosa</td><td class="colon">:</td><td id="diagnosa">-</td></tr>
+        <tr><td class="label">Dokter Pengirim</td><td class="colon">:</td><td id="dokter">-</td></tr>
+        <tr><td class="label">Penanggung Jawab Lab</td><td class="colon">:</td><td id="pj">-</td></tr>
+      </table>
+    </div>
+
+    <div style="margin-top: 40px;">
+        <h4 class="section-title">Jenis Pemeriksaan yang Akan Dilakukan</h4>
+        <table class="tests-table" id="tableTests">
+            <thead>
+            <tr>
+                <th style="width: 10%;">No</th>
+                <th>Jenis Pemeriksaan</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <div class="signature-section">
+      <div class="signature-box">
+        <p>Petugas Laboratorium,</p>
+        <div class="signature-space"></div>
+        <p class="signature-name" id="pjSign">( . . . . . . . . . . . . . . . . . . . . . . )</p>
+      </div>
+      <div class="signature-box">
+        <p>Dokter Pengirim,</p>
+        <div class="signature-space"></div>
+        <p class="signature-name" id="dokterSign">( . . . . . . . . . . . . . . . . . . . . . . )</p>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-print" onclick="window.print()">🖨 Cetak Formulir</button>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Script Anda sebelumnya sudah cukup baik, tidak perlu diubah.
+      // Cukup salin kembali script lama Anda ke sini.
+      const stored = JSON.parse(localStorage.getItem('pemeriksaanUntukDiinput') || 'null');
+      const pasienList = JSON.parse(localStorage.getItem('pasienList') || '[]');
+
+      if (!stored || !stored.pasienId) {
+        document.body.innerHTML = '<h2>Data pemeriksaan tidak ditemukan. Silakan kembali ke halaman sebelumnya dan pilih pasien serta pemeriksaannya.</h2>';
+        return;
+      }
+
+      const pasien = pasienList.find(p => p.id === stored.pasienId);
+
+      if (!pasien) {
+        document.body.innerHTML = '<h2>Data pasien tidak ditemukan.</h2>';
+        return;
+      }
+
+      // Isi data pasien
+      document.getElementById('namaPasien').textContent = `: ${pasien.nama || '-'}`;
+      document.getElementById('umurPasien').textContent = `: ${pasien.umur ? pasien.umur + ' tahun' : '-'}`;
+      document.getElementById('jkPasien').textContent = `: ${pasien.jekel === 'L' ? 'Laki-laki' : 'Perempuan'}`;
+      document.getElementById('tanggalPeriksa').textContent = `: ${pasien.tanggal || '-'}`;
+      document.getElementById('diagnosa').textContent = `: ${pasien.diagnosa || '-'}`;
+      document.getElementById('dokter').textContent = `: ${pasien.dokter_pengirim || '-'}`;
+      document.getElementById('pj').textContent = `: ${pasien.penanggung_jawab || '-'}`;
+      
+      // Isi nama di bagian tanda tangan
+      document.getElementById('pjSign').textContent = `( ${pasien.penanggung_jawab || '_________________'} )`;
+      document.getElementById('dokterSign').textContent = `( ${pasien.dokter_pengirim || '_________________'} )`;
+
+      // Isi tabel pemeriksaan
+      const tests = stored.tests || pasien.tesDipilih || [];
+      const tbody = document.querySelector('#tableTests tbody');
+      tbody.innerHTML = '';
+      if (tests.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center">- Tidak ada pemeriksaan yang dipilih -</td></tr>';
+      } else {
+        tests.forEach((t, i) => {
+          tbody.innerHTML += `<tr><td>${i + 1}</td><td>${t}</td></tr>`;
+        });
+      }
+      
+      // Hapus data temp setelah digunakan agar tidak tercetak lagi saat refresh
+      localStorage.removeItem('pemeriksaanUntukDiinput');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+/* Pengaturan dasar untuk halaman cetak */
+body {
+  font-family: "Times New Roman", Times, serif;
+  color: #000;
+  margin: 20px;
+  padding: 0;
+}
+
+.container {
+  font-size: 14px;
+  width: 100%;
+}
+
+.text-bold {
+  font-weight: bold;
+}
+
+/* Header Atas (Logo dan Nama RS) */
+.print-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border-bottom: 2px solid black; 
+  padding-bottom: 10px;
+  margin-bottom: 20px; 
+}
+
+.print-header-container .logo {
+  width: 100px;
+}
+
+.print-header-container .logo-rs {
+  width: 150px;
+  height: auto;
+}
+
+.print-header-container .logo img {
+  width: 100%;
+  height: auto;
+}
+
+.print-header-container .center-text {
+  text-align: center;
+  flex-grow: 1;
+  padding: 0 15px;
+}
+
+.print-header-container .center-text h4,
+.print-header-container .center-text h2,
+.print-header-container .center-text p {
+  margin: 2px 0;
+}
+
+.print-header-container .center-text h2 {
+  font-size: 1.2em;
+}
+
+.print-header-container .center-text p {
+  font-size: 0.8em;
+}
+
+/* Tabel Identitas Pasien */
+.table-identitas {
+  width: 100%;
+  margin-bottom: 20px;
+  font-size: 14px;
+  border-collapse: collapse;
+}
+
+.table-identitas th,
+.table-identitas td {
+  padding: 4px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table-identitas th {
+  width: 20%;
+  font-weight: bold; 
+}
+.table-identitas td.colon {
+  width: 2%; 
+}
+.table-identitas td.value {
+  width: 28%; 
+}
+
+/* Tabel Hasil Lab */
+#tableHasil {
+  border-collapse: collapse;
+  margin: 20px auto;
+  font-size: 14px;
+  width: 100%;
+}
+
+#tableHasil th,
+#tableHasil td {
+  border: 1px solid #000;
+  padding: 6px;
+  text-align: left;
+}
+
+/* Style ini memaksa browser untuk mencetak warna latar belakang */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* [PERUBAHAN] Teks header diatur menjadi tengah */
+#tableHasil th {
+  background-color: #005A9C;
+  color: #FFFFFF;
+  text-align: center; /* Ditambahkan */
+}
+
+/* === Blok CSS sebelumnya untuk sel data DIHAPUS === */
+
+
+/* Style untuk baris hasil abnormal */
+#tableHasil tr.abnormal td {
+    background-color: #F8D7DA !important; /* Latar belakang merah muda */
+    color: #721C24 !important; /* Teks merah tua */
+    font-weight: bold; /* Teks tebal */
+}
+
+/* Penanggung Jawab */
+#penanggungJawab {
+  text-align: right;
+  margin-top: 50px;
+  margin-right: 40px;
+  font-size: 14px;
+}

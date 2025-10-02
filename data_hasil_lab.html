@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Hasil Lab - Rumah Sakit Imanuel</title>
+  <link rel="stylesheet" href="style2.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Selamat Datang di Rumah Sakit Imanuel</h1>
+  </div>
+
+  <div class="navigation-bar">
+    <a href="index.html" class="navbar-logo">RS Imanuel</a>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="data_pasien.html">Data Pasien</a></li>
+      <li><a href="periksa.html">Jenis Pemeriksaan</a></li>
+      <li><a href="data_hasil_lab.html">Input Hasil Lab</a></li>
+    </ul>
+  </div>
+
+  <div class="navbar-placeholder"></div>
+
+  <div class="container" id="formContainer">
+    <h1 class="page-title" id="input-header">Input Data Hasil Lab</h1>
+
+    <div class="patient-select-container">
+        <label for="pasienSelect">Nama Pasien:</label>
+        <div class="search-and-select-wrapper">
+            <div class="input-group">
+                <input type="text" id="searchField" placeholder="Cari nama pasien...">
+                <button id="searchFieldButton">Cari</button>
+            </div>
+            <div class="main-controls">
+                <select id="pasienSelect">
+                    <option value="">-- Pilih Pasien dari daftar --</option>
+                </select>
+                <input type="hidden" id="pasienIdHidden">
+            </div>
+        </div>
+    </div>
+
+    <div id="formInput">
+        <div id="hemoglobinGroup" class="form-group hidden"><label for="hemoglobin">Hemoglobin:</label><input type="number" id="hemoglobin" step="0.01"></div>
+        <div id="hematokritGroup" class="form-group hidden"><label for="hematokrit">Hematokrit:</label><input type="number" id="hematokrit" step="0.01"></div>
+        <div id="leukositGroup" class="form-group hidden"><label for="leukosit">Leukosit:</label><input type="number" id="leukosit"></div>
+        <div id="eritrositGroup" class="form-group hidden"><label for="eritrosit">Eritrosit:</label><input type="number" id="eritrosit" step="0.01"></div>
+        <div id="trombositGroup" class="form-group hidden"><label for="trombosit">Trombosit:</label><input type="number" id="trombosit"></div>
+        <div id="ledGroup" class="form-group hidden"><label for="led">LED:</label><input type="number" id="led"></div>
+        <div id="retikulositGroup" class="form-group hidden"><label for="retikulosit">Retikulosit:</label><input type="number" id="retikulosit" step="0.1"></div>
+        <div id="sgotGroup" class="form-group hidden"><label for="sgot">SGOT (AST):</label><input type="number" id="sgot"></div>
+        <div id="sgptGroup" class="form-group hidden"><label for="sgpt">SGPT (ALT):</label><input type="number" id="sgpt"></div>
+        <div id="ureumGroup" class="form-group hidden"><label for="ureum">Ureum:</label><input type="number" id="ureum"></div>
+        <div id="creatinineGroup" class="form-group hidden"><label for="creatinine">Creatinine:</label><input type="number" id="creatinine" step="0.01"></div>
+        <div id="hbsagGroup" class="form-group hidden">
+            <label for="hbsag">HbsAG:</label>
+            <select id="hbsag">
+                <option value="">-- Pilih Hasil --</option>
+                <option value="Negatif">Negatif</option>
+                <option value="Positif">Positif</option>
+            </select>
+        </div>
+        <div id="antiHcvGroup" class="form-group hidden">
+            <label for="antiHcv">Anti HCV:</label>
+            <select id="antiHcv">
+                <option value="">-- Pilih Hasil --</option>
+                <option value="Negatif">Negatif</option>
+                <option value="Positif">Positif</option>
+            </select>
+        </div>
+
+      <button id="saveBtn" class="hidden">Simpan Hasil Lab</button>
+      <button id="cancelBtn" class="hidden">Batal</button>
+    </div>
+  </div>
+
+  <div class="patient-data-container">
+    <div class="table-header">
+      <h2 class="section-title">Data Hasil Lab Pasien</h2>
+      <div class="search-container">
+        <input type="search" id="searchInput" placeholder="Cari nama pasien di tabel...">
+        <button id="searchButton">Cari</button>
+      </div>
+    </div>
+  </div>
+  <div id="hasilLabTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Nama Pasien</th>
+          <th class="sortable" data-sort="tanggal">Tanggal Periksa ⇵</th>
+          <th>Dokter Pengirim</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="hasilLabList"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const DOM = {
+        pasienSelect: document.getElementById('pasienSelect'),
+        pasienIdHidden: document.getElementById('pasienIdHidden'),
+        saveBtn: document.getElementById('saveBtn'),
+        cancelBtn: document.getElementById('cancelBtn'),
+        hasilLabList: document.getElementById('hasilLabList'),
+        searchInput: document.getElementById('searchInput'),
+        searchButton: document.getElementById('searchButton'),
+        searchField: document.getElementById('searchField'),
+        searchFieldButton: document.getElementById('searchFieldButton')
+    };
+    let currentSort = { key: 'tanggal', order: 'desc' };
+
+    function getAllPatients() { return JSON.parse(localStorage.getItem('pasienList')) || []; }
+    function saveAllPatients(pasienList) { localStorage.setItem('pasienList', JSON.stringify(pasienList)); }
+    function handlePrint(pasienId) { window.open(`print.html?id=${pasienId}`, '_blank'); }
+
+    function renderTable() {
+        const searchTerm = DOM.searchInput.value.toLowerCase();
+        let pasienDenganHasil = getAllPatients().filter(p => p.hasilLab && Object.keys(p.hasilLab).length > 0);
+        if (searchTerm) {
+            pasienDenganHasil = pasienDenganHasil.filter(p => p.nama.toLowerCase().includes(searchTerm));
+        }
+        pasienDenganHasil.sort((a, b) => {
+            const dateA = new Date(a.tanggal); const dateB = new Date(b.tanggal);
+            return currentSort.order === 'asc' ? dateA - dateB : dateB - dateA;
+        });
+        DOM.hasilLabList.innerHTML = '';
+        if (pasienDenganHasil.length === 0) {
+            DOM.hasilLabList.innerHTML = '<tr><td colspan="4" style="text-align:center;">Data tidak ditemukan.</td></tr>'; return;
+        }
+        pasienDenganHasil.forEach(p => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${p.nama}</td><td>${p.tanggal||'-'}</td><td>${p.dokter_pengirim||'-'}</td>
+            <td><button class="btn-edit" onclick="handleEdit(${p.id})">Edit</button><button class="btn-print" onclick="handlePrint(${p.id})">Cetak</button></td>`;
+            DOM.hasilLabList.appendChild(row);
+        });
+    }
+
+    function siapkanForm(pasien, testsToShow, prefillData = {}) {
+        DOM.pasienSelect.value = pasien.id;
+        DOM.pasienIdHidden.value = pasien.id;
+        document.querySelectorAll('.form-group').forEach(group => {
+            group.classList.add('hidden');
+        });
+        testsToShow.forEach(testId => {
+            const group = document.getElementById(`${testId}Group`);
+            const input = document.getElementById(testId);
+            if (group && input) {
+                group.classList.remove('hidden');
+                input.value = prefillData[testId] || '';
+            }
+        });
+        DOM.saveBtn.classList.remove('hidden'); 
+        DOM.cancelBtn.classList.remove('hidden');
+    }
+
+    function handleEdit(pasienId) {
+        const pasien = getAllPatients().find(p => p.id === pasienId);
+        if (pasien && pasien.tesDipilih) {
+            siapkanForm(pasien, pasien.tesDipilih, pasien.hasilLab || {});
+            DOM.saveBtn.textContent = 'Update Hasil Lab';
+        }
+    }
+
+    function handleSave() {
+        const pasienId = parseInt(DOM.pasienIdHidden.value);
+        if (!pasienId) return alert('Silakan pilih pasien terlebih dahulu!');
+        const pasienList = getAllPatients();
+        const pasienIndex = pasienList.findIndex(p => p.id === pasienId);
+        if (pasienIndex === -1) return alert('Pasien tidak ditemukan!');
+        
+        let hasilLab = pasienList[pasienIndex].hasilLab || {};
+        document.querySelectorAll('.form-group:not(.hidden)').forEach(group => {
+            const input = group.querySelector('input, textarea, select');
+            if (input && input.value.trim() !== '') {
+                hasilLab[input.id] = input.value;
+            } else if (input) {
+                delete hasilLab[input.id];
+            }
+        });
+
+        const hb = parseFloat(hasilLab.hemoglobin);
+        const ht = parseFloat(hasilLab.hematokrit);
+        const er_val = parseFloat(hasilLab.eritrosit);
+
+        if(!isNaN(ht) && !isNaN(er_val) && er_val > 0) {
+            hasilLab.mcv = ((ht / er_val) * 10).toFixed(2);
+        } else {
+            delete hasilLab.mcv;
+        }
+        if(!isNaN(hb) && !isNaN(er_val) && er_val > 0) {
+            hasilLab.mch = ((hb / er_val) * 10).toFixed(2);
+        } else {
+            delete hasilLab.mch;
+        }
+        if(!isNaN(hb) && !isNaN(ht) && ht > 0) {
+            hasilLab.mchc = ((hb / ht) * 100).toFixed(2);
+        } else {
+            delete hasilLab.mchc;
+        }
+        
+        pasienList[pasienIndex].hasilLab = hasilLab; 
+        saveAllPatients(pasienList);
+        alert('Data hasil lab berhasil disimpan/diupdate!'); 
+        window.location.reload();
+    }
+
+    function populatePatientDropdown(filter = "") {
+        const pasienList = getAllPatients();
+        DOM.pasienSelect.innerHTML = '<option value="">-- Pilih Pasien dari daftar --</option>';
+        pasienList
+            .filter(p => p.nama.toLowerCase().includes(filter.toLowerCase()))
+            .forEach(p => {
+                const option=document.createElement('option'); 
+                option.value=p.id; 
+                option.textContent=p.nama; 
+                DOM.pasienSelect.appendChild(option);
+        });
+    }
+
+    function onPatientSelectChange() {
+        const pasienId = parseInt(DOM.pasienSelect.value);
+        DOM.pasienIdHidden.value = pasienId || "";
+
+        document.querySelectorAll('.form-group').forEach(g => g.classList.add('hidden'));
+        DOM.saveBtn.classList.add('hidden');
+        DOM.cancelBtn.classList.add('hidden');
+
+        if (pasienId) {
+            const pasien = getAllPatients().find(p => p.id === pasienId);
+            if (pasien && pasien.tesDipilih && pasien.tesDipilih.length > 0) {
+                siapkanForm(pasien, pasien.tesDipilih, pasien.hasilLab || {});
+                DOM.saveBtn.textContent = 'Simpan Hasil Lab';
+            } else if (pasien) {
+                alert(`Pasien "${pasien.nama}" belum memiliki pilihan pemeriksaan. Silakan pilih di halaman 'Jenis Pemeriksaan' terlebih dahulu.`);
+            }
+        }
+    }
+    
+    function handleNavbarScroll() {
+        const navbar = document.querySelector(".navigation-bar");
+        if (window.scrollY > 50) navbar.classList.add("scrolled");
+        else navbar.classList.remove("scrolled");
+    }
+
+    function initializeApp() {
+        populatePatientDropdown();
+        
+        const dataDariPemeriksaanJSON = localStorage.getItem('pemeriksaanUntukDiinput');
+        if (dataDariPemeriksaanJSON) {
+            localStorage.removeItem('pemeriksaanUntukDiinput');
+            try {
+                const dataDariPemeriksaan = JSON.parse(dataDariPemeriksaanJSON);
+                const pasien = getAllPatients().find(p => p.id === dataDariPemeriksaan.pasienId);
+                if (pasien) {
+                    populatePatientDropdown();
+                    siapkanForm(pasien, dataDariPemeriksaan.tests, pasien.hasilLab || {});
+                    DOM.pasienSelect.value = dataDariPemeriksaan.pasienId;
+                }
+            } catch (e) {
+                console.error("Gagal memproses data redirect:", e);
+            }
+        }
+
+        DOM.pasienSelect.addEventListener('change', onPatientSelectChange);
+        DOM.saveBtn.addEventListener('click', handleSave);
+        DOM.cancelBtn.addEventListener('click', ()=>{ if(confirm('Batalkan perubahan?')) window.location.reload(); });
+        
+        DOM.searchButton.addEventListener('click', renderTable);
+        DOM.searchInput.addEventListener('keyup', e=>{ if(e.key==='Enter') renderTable(); });
+
+        function filterPasienDropdown() {
+            populatePatientDropdown(DOM.searchField.value);
+        }
+        DOM.searchFieldButton.addEventListener('click', filterPasienDropdown);
+        DOM.searchField.addEventListener('keyup', e => {
+            if (e.key === 'Enter') filterPasienDropdown();
+        });
+
+        document.querySelectorAll('#hasilLabTable th.sortable').forEach(header=>{
+            header.addEventListener('click',()=>{ const sortKey=header.getAttribute('data-sort');
+                currentSort.order=(currentSort.key===sortKey&&currentSort.order==='desc')?'asc':'desc';
+                currentSort.key=sortKey; renderTable(); });
+        });
+        window.addEventListener("scroll", handleNavbarScroll);
+        renderTable();
+    }
+    
+    document.addEventListener('DOMContentLoaded', initializeApp);
+  </script>
+</body>
+</html>
