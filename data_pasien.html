@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rumah Sakit Imanuel - Data Pasien</title>
+  <link rel="stylesheet" href="style1.css">
+</head>
+<body>
+
+  <div class="header">
+    <h1>Selamat Datang di Rumah Sakit Imanuel</h1>
+  </div>
+
+  <div class="navigation-bar">
+    <a href="index.html" class="navbar-logo">RS Imanuel</a>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="data_pasien.html">Data Pasien</a></li>
+      <li><a href="periksa.html">Jenis Pemeriksaan</a></li>
+      <li><a href="data_hasil_lab.html">Data Hasil Lab</a></li>
+    </ul>
+  </div>
+
+  <div class="form">
+    <h1>Input Data Pasien</h1>
+    <label for="nama">Nama:</label>
+    <input type="text" id="nama" required>
+
+    <label for="umur">Umur:</label>
+    <input type="number" id="umur" required>
+
+    <label for="jenis_kelamin">Jenis Kelamin:</label>
+    <select class="form-select" id="jenis_kelamin" required>
+      <option selected value="">--- Pilih Jenis Kelamin ---</option>
+      <option value="P">Perempuan</option>
+      <option value="L">Laki-laki</option>
+    </select>
+
+    <label for="tanggal">Tanggal Periksa:</label>
+    <input type="date" id="tanggal" required>
+
+    <label for="alamat">Alamat:</label>
+    <input type="text" id="alamat" required>
+
+    <label for="diagnosa">Diagnosa:</label>
+    <input type="text" id="diagnosa" required>
+
+    <label for="dokter_pengirim">Dokter Pengirim:</label>
+    <input type="text" id="dokter_pengirim" required>
+
+    <label for="penanggung_jawab">Penanggung Jawab Lab:</label>
+    <select class="form-select" id="penanggung_jawab" required>
+        <option selected value="">--- Pilih Penanggung Jawab ---</option>
+        <option value="Ahamad Syafi'i, S.Tr.kes.">Ahamad Syafi'i, S.Tr.kes.</option>
+        <option value="Syahroni, S.Tr.kes.">Syahroni, S.Tr.kes.</option>
+        <option value="Uya kuya, A.Md.Kes.">Uya kuya, A.Md.Kes.</option>
+        <option value="Rebeca Kornel, A.Md.kes.">Rebeca Kornel, A.Md.kes.</option>
+        <option value="Putri Hasanah, S.Tr.Kes.">Putri Hasanah, S.Tr.Kes.</option>
+    </select>
+
+    <button id="submitBtn">Simpan Data</button>
+  </div>
+
+<div class="patient-data-container">
+    <div class="table-header">
+        <h2 class="section-title">Data Pasien</h2>
+        <div class="search-container">
+            <input type="search" id="searchInput" placeholder="Cari nama pasien...">
+            <button id="searchButton">Cari</button>
+            <div id="autocompleteResults" class="autocomplete-results"></div>
+        </div>
+    </div>
+</div>
+
+  <div id="studentList">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-sort="nama">Nama ⇵</th>
+          <th>Umur</th>
+          <th>Jenis Kelamin</th>
+          <th class="sortable" data-sort="tanggal">Tanggal Periksa ⇵</th>
+          <th>Alamat</th>
+          <th>Diagnosa</th>
+          <th>Dokter Pengirim</th>
+          <th>Penganggung Jawab</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="pasienList"></tbody>
+    </table>
+  </div>
+
+  <script>
+    let dataPasien = null;
+    let isSaveButton = true;
+    let currentSort = { key: 'nama', order: 'asc' };
+
+    function simpanData() {
+      const nama = document.getElementById('nama').value;
+      const umur = document.getElementById('umur').value;
+      const alamat = document.getElementById('alamat').value;
+      const jekel = document.getElementById('jenis_kelamin').value;
+      const tanggal = document.getElementById('tanggal').value;
+      const diagnosa = document.getElementById('diagnosa').value;
+      const dokter_pengirim = document.getElementById('dokter_pengirim').value;
+      const penanggung_jawab = document.getElementById('penanggung_jawab').value;
+
+      if (!nama || !umur || !alamat || !jekel || !tanggal || !diagnosa || !dokter_pengirim || !penanggung_jawab) {
+        alert('Silakan isi semua kolom dengan benar.');
+        return;
+      }
+      let pasienList = JSON.parse(localStorage.getItem('pasienList')) || [];
+      
+      const pasienData = {
+        id: isSaveButton ? generateUniqueId(pasienList.map(p => p.id)) : dataPasien.id,
+        nama, umur, alamat, jekel, tanggal, diagnosa, dokter_pengirim, penanggung_jawab,
+        hasilLab: isSaveButton ? {} : (dataPasien.hasilLab || {}),
+        tesDipilih: isSaveButton ? [] : (dataPasien.tesDipilih || [])
+      };
+
+      if (isSaveButton) {
+        pasienList.push(pasienData);
+      } else {
+        const index = pasienList.findIndex(p => p.id === pasienData.id);
+        if (index !== -1) pasienList[index] = pasienData;
+      }
+
+      localStorage.setItem('pasienList', JSON.stringify(pasienList));
+      resetForm();
+      filterAndSortData();
+    }
+
+    function generateUniqueId(existingIds) { let id = 1; while (existingIds.includes(id)) id++; return id; }
+    
+    function resetForm() {
+      document.getElementById('nama').value = '';
+      document.getElementById('umur').value = '';
+      document.getElementById('alamat').value = '';
+      document.getElementById('jenis_kelamin').value = '';
+      document.getElementById('tanggal').value = '';
+      document.getElementById('diagnosa').value = '';
+      document.getElementById('dokter_pengirim').value = '';
+      document.getElementById('penanggung_jawab').value = '';
+      document.getElementById('submitBtn').textContent = 'Simpan Data';
+      isSaveButton = true;
+      dataPasien = null;
+    }
+
+    function hapusData(id) {
+      if (confirm('Apakah Anda yakin ingin menghapus data pasien ini?')) {
+        let pasienList = JSON.parse(localStorage.getItem('pasienList')) || [];
+        pasienList = pasienList.filter(pasien => pasien.id !== id);
+        localStorage.setItem('pasienList', JSON.stringify(pasienList));
+        filterAndSortData();
+      }
+    }
+
+    function editData(id) {
+      let pasienList = JSON.parse(localStorage.getItem('pasienList')) || [];
+      const pasien = pasienList.find(pasien => pasien.id === id);
+      if (pasien) {
+        isSaveButton = false;
+        dataPasien = pasien;
+        document.getElementById('nama').value = pasien.nama;
+        document.getElementById('umur').value = pasien.umur;
+        document.getElementById('alamat').value = pasien.alamat;
+        document.getElementById('jenis_kelamin').value = pasien.jekel;
+        document.getElementById('tanggal').value = pasien.tanggal;
+        document.getElementById('diagnosa').value = pasien.diagnosa;
+        document.getElementById('dokter_pengirim').value = pasien.dokter_pengirim;
+        document.getElementById('penanggung_jawab').value = pasien.penanggung_jawab;
+        document.getElementById('submitBtn').textContent = 'Update Data';
+        window.scrollTo(0, 0);
+      }
+    }
+
+    function tampilkanDatapasien(data) {
+      const pasienListContainer = document.getElementById('pasienList');
+      pasienListContainer.innerHTML = '';
+      if (data.length === 0) {
+          pasienListContainer.innerHTML = '<tr><td colspan="9" style="text-align:center;">Data tidak ditemukan.</td></tr>';
+          return;
+      }
+      for (const pasien of data) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${pasien.nama}</td>
+          <td>${pasien.umur}</td>
+          <td>${pasien.jekel === 'L' ? 'Laki-laki' : 'Perempuan'}</td>
+          <td>${pasien.tanggal}</td>
+          <td>${pasien.alamat}</td>
+          <td>${pasien.diagnosa}</td>
+          <td>${pasien.dokter_pengirim}</td>
+          <td>${pasien.penanggung_jawab}</td>
+          <td>
+            <button onclick="editData(${pasien.id})">Edit</button>
+            <button onclick="hapusData(${pasien.id})">Hapus</button>
+          </td>`;
+        pasienListContainer.appendChild(row);
+      }
+    }
+
+    function filterAndSortData() {
+      let pasienList = JSON.parse(localStorage.getItem('pasienList')) || [];
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      let filteredData = pasienList;
+      if (searchTerm) {
+        filteredData = pasienList.filter(pasien => pasien.nama.toLowerCase().includes(searchTerm));
+      }
+      filteredData.sort((a, b) => {
+        let valA = a[currentSort.key];
+        let valB = b[currentSort.key];
+        if (currentSort.key === 'tanggal') {
+          valA = new Date(valA);
+          valB = new Date(valB);
+          return currentSort.order === 'asc' ? valA - valB : valB - valA;
+        }
+        if (typeof valA === 'string') {
+          return currentSort.order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        }
+        return 0;
+      });
+      tampilkanDatapasien(filteredData);
+    }
+
+    // === Autocomplete Search ===
+    function setupSearchAutocomplete() {
+        const searchInput = document.getElementById("searchInput");
+        const resultsDiv = document.getElementById("autocompleteResults");
+
+        searchInput.addEventListener("input", function () {
+            const val = this.value;
+            resultsDiv.innerHTML = "";
+            if (!val) return;
+
+            const pasienList = JSON.parse(localStorage.getItem("pasienList")) || [];
+            const matches = pasienList.filter(p => p.nama.toLowerCase().includes(val.toLowerCase()));
+
+            matches.forEach(pasien => {
+                const itemDiv = document.createElement("div");
+                itemDiv.innerHTML = pasien.nama.replace(new RegExp(`(${val})`, "gi"), "<strong>$1</strong>");
+                itemDiv.addEventListener("click", () => {
+                    searchInput.value = pasien.nama;
+                    resultsDiv.innerHTML = "";
+                    filterAndSortData();
+                });
+                resultsDiv.appendChild(itemDiv);
+            });
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                resultsDiv.innerHTML = "";
+            }
+        });
+    }
+
+    function handleScroll() {
+      const navbar = document.querySelector('.navigation-bar');
+      if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('searchButton').addEventListener('click', filterAndSortData);
+        document.getElementById('searchInput').addEventListener('keyup', (event) => {
+          if (event.key === 'Enter') filterAndSortData();
+        });
+        document.querySelectorAll('.sortable').forEach(header => {
+          header.addEventListener('click', () => {
+            const sortKey = header.getAttribute('data-sort');
+            if (currentSort.key === sortKey) {
+              currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+            } else {
+              currentSort.key = sortKey;
+              currentSort.order = 'asc';
+            }
+            filterAndSortData();
+          });
+        });
+        document.getElementById('submitBtn').addEventListener('click', simpanData);
+        window.addEventListener('scroll', handleScroll);
+
+        // aktifkan autocomplete
+        setupSearchAutocomplete();
+
+        filterAndSortData();
+    });
+</script>
+
+  </script>
+</body>
+</html>
